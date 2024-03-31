@@ -3,7 +3,10 @@ import mongoose from "mongoose"
 import { DB_NAME } from "./constants.js"
 import  connectDatabase from "./db/db.js"
 import { app } from "./app.js"
-
+dotenv.config({
+    path:"./env"
+}
+)
 
 
 connectDatabase()
@@ -24,10 +27,7 @@ connectDatabase()
     console.error("MONGODB connection failed", error)
 })
 
-dotenv.config({
-    path:"./env"
-}
-)
+
 
 
 
