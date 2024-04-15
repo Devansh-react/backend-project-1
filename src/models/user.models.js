@@ -1,8 +1,8 @@
 import mongoose, { Schema } from "mongoose";
-import { Jwt } from "jsonwebtoken";
+import  Jwt  from "jsonwebtoken";
 import bcrypt from "bcrypt"
 
-const userschema = new mongoose.Schema({
+const userschema = new Schema({
     user: {
         type: String,
         lowercase: true,
@@ -16,7 +16,7 @@ const userschema = new mongoose.Schema({
         require: true,
         unique: true
     },
-    Name: {
+    name: {
         type: String,
         lowercase: true,
         require: true,
@@ -33,7 +33,7 @@ const userschema = new mongoose.Schema({
     },
     watchhistory: [
         {
-            type: Schema.Type.objectID,
+            type: Schema.Types.ObjectId,
             ref: "video"
         }
     ], password: {
@@ -41,7 +41,7 @@ const userschema = new mongoose.Schema({
         require: [true, "password is require"]
     },
     refreshtoken: {
-        type: string
+        type: String,
     }
 
 }, { timestamps: true })
@@ -56,19 +56,19 @@ userschema.pre("save", async function (next) {
 })
 
 
-userschema.methods.passwordcheck = async function (password) {
+userschema.methods.isPasswordCorrect= async function (password) {
     return await bcrypt.compare(password, this.password)
 
 }
 userschema.methods.gernaterefreshtoken = function () {
-    return jwt.sign(
+    return Jwt.sign(
         {
             id: this.id,
 
         },
         process.env.REFRESH_TOKEN_SECRET,
         {
-            expireIN: procress.env.REFRESH_TOKEN_EXPIRY
+            expireIN:process.env.REFRESH_TOKEN_EXPIRY
 
         }
 
@@ -76,7 +76,7 @@ userschema.methods.gernaterefreshtoken = function () {
     )
 }
 userschema.methods.gernateaccesstoken = function () {
-    return jwt.sign(
+    return Jwt.sign(
         {
             id: this.id,
             user: this.user,
@@ -85,7 +85,7 @@ userschema.methods.gernateaccesstoken = function () {
         },
         process.env._ACCESS_TOKEN_SECRET,
         {
-            expireIN: procress.env.ACCESS_TOKEN_EXPIRY
+            expireIN: process.env.ACCESS_TOKEN_EXPIRY
 
         }
 

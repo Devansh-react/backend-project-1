@@ -21,19 +21,17 @@ const uploadOncloudinary = async function (localfilepath) {
         })
         // file uploaded successfully
         console.log("file uploaded successfully", response.url)
-        return response.url;
+        return response ;
 
 
     }
     catch (error) {
         fs.unlinkSync(localfilepath)
         // to remove file from local database
-    }
+    }  
+}
 
-
-    export { uploadOncloudinary }
-
-
+export { uploadOncloudinary }
 
 
 
