@@ -1,12 +1,14 @@
-import asynchandeler from "../utilities/async_handler.js"
+import { asynchandeler } from "../utilities/async_handler.js"
 import { ApiError } from "../utilities/apiError.js"
 import { newuser } from "../models/user.models.js"
 import { uploadOncloudinary } from "../utilities/cloudinary.js"
 import { ApiResponse } from "../utilities/apiResponse.js"
+import jwt from "jsonwebtoken"
+import mongoose from "mongoose";
 
 
 
-const gernateAccessAndRefreshTdoken = async (userId) => {
+const gernateAccessAndRefreshToken = async (userId) => {
     try {
         const user = await newuser.findById(userId)
         const accesstoken = user.gernateaccesstoken()
@@ -22,8 +24,6 @@ const gernateAccessAndRefreshTdoken = async (userId) => {
 
     }
 }
-
-
 
 const registeruser = asynchandeler(async (req, res) => {
 
@@ -101,12 +101,11 @@ const registeruser = asynchandeler(async (req, res) => {
 
 })
 
-
 const loginUser = asynchandeler(async (req, res) => {
 
     const { email, password, user } = req.body
 
-    if (!user || email) {
+    if (!(user || email)) {
         throw new ApiError(401, "Email or username is required")
 
     }
@@ -114,17 +113,17 @@ const loginUser = asynchandeler(async (req, res) => {
         $or: [{ email, password }]
     })
 
-    if (!(user || email )) {
+    if (!(user || email)) {
         throw new ApiError(404, "user dosen't exist create account ")
     }
 
-    const passwordValidity = await account.isPasswordCorrect(password);
+    const passwordValidity = await account.isPasswordCorrect(password)
 
     if (!passwordValidity) {
         throw new ApiError(401, "invalid credentials")
 
     }
-    const { refreshtoken, accesstoken } = gernateAccessAndRefreshTdoken(account.id)
+    const { refreshtoken, accesstoken } = gernateAccessAndRefreshToken(account.id)
 
 
     const loggedinuser = await newuser.findById(account.id).select(" -password -refreshtoken") /*<---- to remove trhe password and refreshtoken from sending it to user*/
@@ -134,46 +133,86 @@ const loginUser = asynchandeler(async (req, res) => {
         secrure: true
     }/*<---this way cookies stored are only access by the database only rather than user*/
 
-    .status(200).cookie("accesstoken", accesstoken, options)
-    .cookie("refreshtoken", refreshtoken, options)
-    .jason(
+        .status(200).cookie("accesstoken", accesstoken, options)
+        .cookie("refreshtoken", refreshtoken, options)
+        .jason(
 
-        new ApiResponse(
-            200,
+            new ApiResponse(
+                200,
 
-            {
-                account: loggedinuser, accesstoken, refreshtoken
-            },
+                {
+                    account: loggedinuser, accesstoken, refreshtoken
+                },
 
-            "user loggedin succesfully"
+                "user loggedin succesfully"
+            )
         )
-    )
     return res;
 })
 
-    const logoutuser=asynchandeler(async(req,res)=>{
+const logoutuser = asynchandeler(async (req, res) => {
 
-        newuser.findOneAndUpdate(
-            req.user.id,
-            {
-                $set:{
-                    refreshtoken:undefined
-                }
-            },
-            {
-                new:true
+    newuser.findOneAndUpdate(
+        req.user.id,
+        {
+            $set: {
+                refreshtoken: undefined
             }
-        )
-        const options = {
-            httpsOnly: true,
-            secrure: true
+        },
+        {
+            new: true
         }
-        return res
+    )
+    const options = {
+        httpsOnly: true,
+        secrure: true
+    }
+    return res
         .status(200)
-        .clearcookie("accesstoken",options)
-        .clearcookie("refreshtoken",options)
-        .json(new ApiResponse(200,"user logout successfully"))
+        .clearcookie("accesstoken", options)
+        .clearcookie("refreshtoken", options)
+        .json(new ApiResponse(200, "user logout successfully"))
 
-    })
+})
 
-export { registeruser, loginUser, logoutuser }
+const RefreshAccToken= asynchandeler(async(req, res)=>{
+    
+try {
+    const incommingrefreshtoken= req.cookies.refreshtoken || req.body.refreshtoken
+    
+    
+    if(!incommingrefreshtoken){
+        throw new ApiError(401,"unauthorize request")
+    }
+    const decodedtoken=jwt.verify(incommingrefreshtoken, procress.env.REFRESH_TOKEN_SECRET)
+    const user = await newuser.findById(decodedtoken?.id)
+    if(!user){
+        throw new ApiError(401,"invalid refresh token ")
+    }
+    if(incommingrefreshtoken !== newuser.refreshtoken){
+        throw new ApiError(), "invalid refresh token "
+    }
+    const options = {
+        httpsOnly: true,
+        secrure: true
+    }
+    
+    const {newrefreshtoken, accesstoken}=await gernateAccessAndRefreshToken(user.id)
+    
+    return res
+    .status(200)
+    .cookie("accesstoken",accesstoken,options)
+    .cookie("refreshtoken",newrefreshtoken, options)
+    .jason( new ApiResponse(200,accesstoken,newrefreshtoken , " token refresh successfully"))
+
+
+} catch (error) {
+    throw new ApiError(400,error)
+    
+}
+
+})
+
+
+
+export { registeruser, loginUser, logoutuser,RefreshAccToken }

@@ -4,7 +4,7 @@ const asynchandeler =(reqhandler)=>{
 
     }
 }
-export default asynchandeler
+export {asynchandeler}
 
 
 // const asynchandeler1 =(fn)=>{async(req, res, next)=>{

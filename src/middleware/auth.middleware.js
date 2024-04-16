@@ -1,7 +1,7 @@
 // this middlewqare will only verify weather the user is present or not
 
 import {ApiError} from "../utilities/apiError.js"
-import asynchandeler from "../utilities/async_handler.js";
+import {asynchandeler} from "../utilities/async_handler.js";
 import jwt from "jsonwebtoken";
 import { newuser } from "../models/user.models.js";
 import { ApiResponse } from "../utilities/apiResponse.js";

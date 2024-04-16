@@ -93,4 +93,4 @@ userschema.methods.gernateaccesstoken = function () {
     )
 }
 
-export const newuser = mongoose.model("Usermodel", userschema)
+export const newuser = mongoose.model("newuser", userschema)
