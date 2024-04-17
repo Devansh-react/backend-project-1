@@ -23,7 +23,7 @@ export const verifyJWT = asynchandeler(async (req, res, next) => {
             throw new console.error(401, "invalid access token")
         }
 
-        req.tokenuser = user;
+        req.user = user; /* ----> we injected user in the  middleware*/
         next()
 
     } catch (error) {

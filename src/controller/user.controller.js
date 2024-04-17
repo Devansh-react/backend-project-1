@@ -175,44 +175,135 @@ const logoutuser = asynchandeler(async (req, res) => {
 
 })
 
-const RefreshAccToken= asynchandeler(async(req, res)=>{
-    
-try {
-    const incommingrefreshtoken= req.cookies.refreshtoken || req.body.refreshtoken
-    
-    
-    if(!incommingrefreshtoken){
-        throw new ApiError(401,"unauthorize request")
+const RefreshAccToken = asynchandeler(async (req, res) => {
+
+    try {
+        const incommingrefreshtoken = req.cookies.refreshtoken || req.body.refreshtoken
+
+
+        if (!incommingrefreshtoken) {
+            throw new ApiError(401, "unauthorize request")
+        }
+        const decodedtoken = jwt.verify(incommingrefreshtoken, procress.env.REFRESH_TOKEN_SECRET)
+        const user = await newuser.findById(decodedtoken?.id)
+        if (!user) {
+            throw new ApiError(401, "invalid refresh token ")
+        }
+        if (incommingrefreshtoken !== newuser.refreshtoken) {
+            throw new ApiError(), "invalid refresh token "
+        }
+        const options = {
+            httpsOnly: true,
+            secrure: true
+        }
+
+        const { newrefreshtoken, accesstoken } = await gernateAccessAndRefreshToken(user.id)
+
+        return res
+            .status(200)
+            .cookie("accesstoken", accesstoken, options)
+            .cookie("refreshtoken", newrefreshtoken, options)
+            .jason(new ApiResponse(200, accesstoken, newrefreshtoken, " token refresh successfully"))
+
+
+    } catch (error) {
+        throw new ApiError(400, error)
+
     }
-    const decodedtoken=jwt.verify(incommingrefreshtoken, procress.env.REFRESH_TOKEN_SECRET)
-    const user = await newuser.findById(decodedtoken?.id)
-    if(!user){
-        throw new ApiError(401,"invalid refresh token ")
+
+})
+const changepassword = asynchandeler(async (req, res) => {
+    const { oldpassword, newpassword, confirmnewpassword } = req.body
+    if (newpassword !== confirmnewpassword) {
+        throw new ApiError(200, "confirm password does not match")
     }
-    if(incommingrefreshtoken !== newuser.refreshtoken){
-        throw new ApiError(), "invalid refresh token "
+    if (newpassword == oldpassword) {
+        throw new ApiError(200, "new password cannot be same as old password")
     }
-    const options = {
-        httpsOnly: true,
-        secrure: true
+    const user = await newuser.findById(req.user?.id)
+    const correctness = await user.isPasswordCorrect(oldpassword)
+    if (!correctness) {
+        throw new error(400, "incorrect password")
+
     }
-    
-    const {newrefreshtoken, accesstoken}=await gernateAccessAndRefreshToken(user.id)
-    
+    user.password = newpassword
+    await user.save({
+        validateBeforeSave: false
+    })
     return res
-    .status(200)
-    .cookie("accesstoken",accesstoken,options)
-    .cookie("refreshtoken",newrefreshtoken, options)
-    .jason( new ApiResponse(200,accesstoken,newrefreshtoken , " token refresh successfully"))
+        .status(200)
+        .jason(new ApiResponse(200, "password changed successfully"))
 
+})
+const currentuser = asynchandeler(async (req, res) => {
+    res.status(200)
+        .jason(200, req.user, "current user")  /*user is already injected in middleware*/
+})
+const upadateaccount = asynchandeler(async (req, res) => {
+    const { email, name } = req.body
 
-} catch (error) {
-    throw new ApiError(400,error)
-    
-}
+    if (!email || !name) {
+        throw new ApiError(400, "email and name is required")
+    }
+
+    await newuser.findByIdAndUpdate(req.user?.id, {
+        $set: {
+            name,
+            email
+        }
+    }, { new: true }
+
+    ).select("-password")
+
+    return res
+        .status(200)
+        .jason(new ApiResponse(200, "account details updated successfully"))
+
+})
+
+const updateuseravtar = asynchandeler(async (req, res) => {
+    const avtarlocalpath = req.files?.path
+    if (!avtarlocalpath) {
+        throw new ApiError(400, "avtar not found")
+    }
+    const avtarcloud = await uploadOncloudinary(avtarlocalpath)
+    if (!avtarcloud) {
+        throw new ApiError(200, "something went wrong while uploading avtar")
+    }
+    newuser.findByIdAndUpdate(req.user?.id, {
+        $set: {
+            avatar: avtarcloud.url
+        }
+    }, { new: true }
+    ).select(" -password")
+
+    return res
+        .status(200)
+        .jason(new ApiResponse(200, "avtar updated successfully"))
+
+})
+const updateusercoverimage = asynchandeler(async (req, res) => {
+    const coverimagelocalpath = req.files?.path
+    if (!coverimagelocalpath) {
+        throw new ApiError(400, "coverimage not found")
+    }
+    const coverimagecloud = await uploadOncloudinary(coverimagelocalpath)
+    if (!coverimagecloud) {
+        throw new ApiError(200, "something went wrong while uploading coverimage")
+    }
+    newuser.findByIdAndUpdate(req.user?.id, {
+        $set: {
+            coverimage: coverimagecloud.url
+        }
+    }, { new: true }
+    ).select(" -password")
+
+    return res
+        .status(200)
+        .jason(new ApiResponse(200, "coverimage updated successfully"))
 
 })
 
 
-
-export { registeruser, loginUser, logoutuser,RefreshAccToken }
+export { registeruser, loginUser, logoutuser, RefreshAccToken, changepassword, currentuser, upadateaccount, updateuseravtar, updateusercoverimage }
+h
