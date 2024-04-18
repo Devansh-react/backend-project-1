@@ -237,7 +237,7 @@ const changepassword = asynchandeler(async (req, res) => {
 })
 const currentuser = asynchandeler(async (req, res) => {
     res.status(200)
-        .jason(200, req.user, "current user")  /*user is already injected in middleware*/
+        .jason(new ApiResponse(200, req.user, "current user"))  /*user is already injected in middleware*/
 })
 const upadateaccount = asynchandeler(async (req, res) => {
     const { email, name } = req.body
@@ -270,7 +270,7 @@ const updateuseravtar = asynchandeler(async (req, res) => {
     if (!avtarcloud) {
         throw new ApiError(200, "something went wrong while uploading avtar")
     }
-    newuser.findByIdAndUpdate(req.user?.id, {
+    await newuser.findByIdAndUpdate(req.user?.id, {
         $set: {
             avatar: avtarcloud.url
         }
@@ -291,7 +291,7 @@ const updateusercoverimage = asynchandeler(async (req, res) => {
     if (!coverimagecloud) {
         throw new ApiError(200, "something went wrong while uploading coverimage")
     }
-    newuser.findByIdAndUpdate(req.user?.id, {
+    await newuser.findByIdAndUpdate(req.user?.id, {
         $set: {
             coverimage: coverimagecloud.url
         }
