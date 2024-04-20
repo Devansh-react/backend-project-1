@@ -304,6 +304,55 @@ const updateusercoverimage = asynchandeler(async (req, res) => {
 
 })
 
+const getuserChannelProfile = asynchandeler(async (req, res) => {
+    const username = req.prams
+    if (!username?.trim()) {
+        throw new ApiError(400, "username not found")
+    }
+    const channel = await newuser.aggregate([{
+        $match: {
+            user: username?.toLowerCase()
+        },
+    },
+    {
+        $lookup: {
+            from: "subscription",
+            localField:"id",
+            foreignField:"channel",
+            as:"subscriber"
+        }
+    },
+    {
+        $lookup: {
+            from: "subscription",
+            localField:"id",
+            foreignField:"subscriber",
+            as:"subscribed-to-channel"
+        }
+    },
+    {
+        $addFields:{
+           scriberscount:{
+            $size:"$subscribers"
+           },
+           channelToSubscribe:{
+            $size:"$subscribed-to-channel"
+           },
+           isSubscribed:{
+            $cond:{
+                if:{$in:[req.user?.id,"$subscribers.subscriber"]},
+                then:true,
+                else:false
+            }
+           }
+    
+        }
+    }
 
-export { registeruser, loginUser, logoutuser, RefreshAccToken, changepassword, currentuser, upadateaccount, updateuseravtar, updateusercoverimage }
-h
+
+    ])
+
+
+})
+
+export { registeruser, loginUser, logoutuser, RefreshAccToken, changepassword, currentuser, upadateaccount, updateuseravtar, updateusercoverimage, getuserChannelProfile }

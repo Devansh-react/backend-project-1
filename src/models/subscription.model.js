@@ -1,6 +1,6 @@
 import mongoose, {Schema} from "mongoose"
  const subscriptionSchema= new Schema({
-    user:{
+    subscriber:{
         type:Schema.Types.ObjectId,
         ref:"user",
         required:true
