@@ -309,6 +309,7 @@ const getuserChannelProfile = asynchandeler(async (req, res) => {
     if (!username?.trim()) {
         throw new ApiError(400, "username not found")
     }
+   
     const channel = await newuser.aggregate([{
         $match: {
             user: username?.toLowerCase()
@@ -347,11 +348,29 @@ const getuserChannelProfile = asynchandeler(async (req, res) => {
            }
     
         }
+    },
+   {
+    $project:{
+        name:1,
+        user:1,
+        avatar:1,
+        coverimage:1,
+        subscriberscount:1,
+        channelToSubscribe:1,
+        isSubscribed:1,
+        email:1
     }
+   },
+   
 
 
     ])
-
+    if (!channel?.length) {
+        throw new ApiError(400, "channel not found")
+    }
+    return res
+        .status(200)
+        .jason(new ApiResponse(200, channel[0], "channel profile"))
 
 })
 
